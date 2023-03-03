@@ -1,0 +1,56 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+<div class="text-center">
+    <img src="/image/{{ word.id }}.{{ word.image_extension }}" class="rounded" width="30%">
+</div>
+
+<h1 class="text-center">{{ word.word }}</h1>
+<p class="text-center">{{ word.description }}</p>
+
+<div class="d-flex flex-row-reverse">
+    {% if is_admin and is_propose %}
+    <!--    <a href="/propose_word/{{ word.id }}?approve=1" class="btn btn-success mx-1" role="button">Одобрить</a>-->
+    <!--    <a href="/propose_word/{{ word.id }}?approve=0" class="btn btn-danger mx-1" role="button">Отказать</a>-->
+    <button type="button" class="btn btn-success mx-1" onclick="approve()">Одобрить</button>
+    <button type="button" class="btn btn-danger mx-1" onclick="decline()">Отказать</button>
+    {% endif %}
+    {% if is_admin and not is_propose %}
+    <a href="/edit_item/{{ word.id }}" class="btn btn-warning mx-1" role="button">Редактировать</a>
+    {% endif %}
+</div>
+
+<script>
+    function approve() {
+        fetch('/approve_word', {
+            method: 'post',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "word_id": {{ word.id}},
+                "approve": 1
+            })
+        });
+        window.location.reload();
+    }
+
+    function decline() {
+        fetch('/approve_word', {
+            method: 'post',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "word_id": {{ word.id}},
+                "approve": 0
+            })
+        });
+        window.location.reload();
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+<table class="table table-striped table-bordered" style="background: #FFFFFF;">
+    <thead>
+    <tr>
+        <th scope="col" style="width: 5%">#</th>
+        <th scope="col">Слово</th>
+        <th scope="col">Описание</th>
+        <th scope="col">Категория</th>
+        <th scope="col" style="width: 10%"></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in data %}
+        <tr>
+            <th scope="row">{{ item.id }}</th>
+            <td>{{ item.word }}</td>
+            <td>{{ item.description }}</td>
+            <td>5</td>
+            <td>
+                <a href="/item/{{ item.id }}" class="btn btn-secondary" role="button">Перейти</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

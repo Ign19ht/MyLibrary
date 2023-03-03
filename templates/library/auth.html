@@ -1,0 +1,21 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+<h1 class="text-center">Авторизация</h1>
+
+<form action="/login" method="POST" id="authForm" enctype="multipart/form-data">
+    <div class="form-group my-2">
+        <label for="usernameInput">Логин</label>
+        <input class="form-control" id="usernameInput" name="username" placeholder="Логин"
+               required="required" pattern="[A-Za-z]+">
+    </div>
+    <div class="form-group my-2">
+        <label for="passwordInput">Пароль</label>
+        <input class="form-control" id="passwordInput" type="password" name="password"
+               placeholder="Пароль" required="required">
+    </div>
+    <button type="submit" class="btn btn-primary my-2">Вход</button>
+</form>
+
+{% endblock %}
