@@ -1,0 +1,13 @@
+{% extends "index_with_back.html" %}
+
+{% block content %}
+
+<h1 class="text-center">{{ word.word }}</h1>
+<h2 class="text-center">Вы действительно хотите удалить слово?</h2>
+
+<div class="d-flex flex-row-reverse">
+    <a href="/remove_word/{{ word.id }}" class="btn btn-danger mx-1" role="button">Удалить</a>
+    <a href="/item/{{ word.id }}" class="btn btn-success mx-1" role="button">Отмена</a>
+</div>
+
+{% endblock %}

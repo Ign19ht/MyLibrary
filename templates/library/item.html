@@ -1,22 +1,21 @@
-{% extends "index.html" %}
+{% extends "index_with_back.html" %}
 
 {% block content %}
 
 <div class="text-center">
-    <img src="/image/{{ word.id }}.{{ word.image_extension }}" class="rounded" width="30%">
+    <img src="/image/{{ word.image_name }}" class="rounded" width="30%" height="40%">
 </div>
 
 <h1 class="text-center">{{ word.word }}</h1>
-<p class="text-center">{{ word.description }}</p>
+<p class="text" style="word">{{ word.description }}</p>
 
 <div class="d-flex flex-row-reverse">
     {% if is_admin and is_propose %}
-    <!--    <a href="/propose_word/{{ word.id }}?approve=1" class="btn btn-success mx-1" role="button">Одобрить</a>-->
-    <!--    <a href="/propose_word/{{ word.id }}?approve=0" class="btn btn-danger mx-1" role="button">Отказать</a>-->
     <button type="button" class="btn btn-success mx-1" onclick="approve()">Одобрить</button>
     <button type="button" class="btn btn-danger mx-1" onclick="decline()">Отказать</button>
     {% endif %}
     {% if is_admin and not is_propose %}
+    <a href="/remove/{{ word.id }}" class="btn btn-danger mx-1" role="button">Удалить</a>
     <a href="/edit_item/{{ word.id }}" class="btn btn-warning mx-1" role="button">Редактировать</a>
     {% endif %}
 </div>

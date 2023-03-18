@@ -12,7 +12,7 @@ class Words(DeclarativeBase):
     id = Column(Integer, primary_key=True)
     word = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    image_extension = Column(String, nullable=False)
+    image_name = Column(String, nullable=False)
     approve = Column(Integer, default=0)
 
 

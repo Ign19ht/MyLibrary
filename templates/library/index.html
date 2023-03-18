@@ -7,7 +7,7 @@
     <title>Library</title>
     <style>
         body {
-            background-image: url(static/images/background.jpg);
+            background-image: url(static/images/back_2.png);
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-size: cover;
@@ -22,24 +22,27 @@
 
 <nav class="navbar navbar-expand-lg bg-light justify-content-between">
     <a class="navbar-brand mx-3" href="/">Энциклопедия цифрового мира</a>
+    <form class="form-inline" action="/filter">
+        <div class="input-group">
+            <input class="form-control" type="search" placeholder="Поиск" aria-label="Search" name="filter">
+            <button class="btn btn-outline-success" type="submit">Поиск</button>
+        </div>
+    </form>
     <ul class="navbar-nav ml-auto mx-2">
         {% if is_admin %}
-            <a href="/proposed_words" class="btn btn-outline-info mx-2" role="button">Посмотреть предложения</a>
-            <a href="/new_word" class="btn btn-outline-danger mx-2" role="button">Добавить слово</a>
-            <a href="/logout" class="btn btn-outline-success mx-2" role="button">Выход</a>
+        <a href="/proposed_words" class="btn btn-outline-info mx-2" role="button">Посмотреть предложения</a>
+        <a href="/new_word" class="btn btn-outline-danger mx-2" role="button">Добавить слово</a>
+        <a href="/logout" class="btn btn-outline-success mx-2" role="button">Выход</a>
         {% else %}
-            <a href="/new_word" class="btn btn-outline-danger mx-2" role="button">Предложить слово</a>
-            <a href="/login" class="btn btn-outline-success mx-2" role="button">Вход</a>
+        <a href="/new_word" class="btn btn-outline-danger mx-2" role="button">Предложить слово</a>
+        <a href="/login" class="btn btn-outline-success mx-2" role="button">Вход</a>
         {% endif %}
     </ul>
 </nav>
 
-<div style="width: 70%; position: absolute; left: 15%; top: 10%; right: 15%; bottom: 5%; background-image: url(static/images/item_back.png);
-background-repeat: no-repeat; background-size: 100% 100%; padding: 5% 10% 5% 10%">
 
-    {% block content %}{% endblock %}
+{% block back %}{% endblock %}
 
-</div>
 
 </body>
 </html>

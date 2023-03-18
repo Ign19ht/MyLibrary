@@ -1,7 +1,6 @@
 import datetime
+import os
 import random
-from copy import copy
-from typing import Union
 
 import uvicorn
 from fastapi import FastAPI, Request, Form, Cookie, status, File, UploadFile
@@ -9,20 +8,34 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+
+import models
 import schemas
-from enum import Enum
-import sys
 from db_manager import create_db, get_db
 import crud
 import string
-
-
-class DataBaseType(Enum):
-    POSTGRES = 1
-    MARIA = 2
-
+import hashlib
 
 create_db()
+
+
+def get_hash(data) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def write_image(file: UploadFile) -> str:
+    image_extension = file.filename.split(".")[-1]
+    data = file.file.read()
+    hash = get_hash(data)
+    image_name = f"{hash}.{image_extension}"
+    with open(f"Images/{image_name}", "wb") as f:
+        f.write(data)
+    return image_name
+
+
+def remove_image(image_name: str):
+    if os.path.exists(f"Images/{image_name}"):
+        os.remove(f"Images/{image_name}")
 
 
 def cookie_gen():
@@ -42,23 +55,54 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/item/static", StaticFiles(directory="static"), name="static")
 app.mount("/edit_item/static", StaticFiles(directory="static"), name="static")
+app.mount("/remove/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates/library")
 
 
-# @app.get("/filter", response_class=HTMLResponse)
-# async def use_filter(request: Request, category: str, session: str = Cookie("")):
-#     check_cookie(session)
-#     query = f"SELECT title, body, image_name FROM news WHERE category='{category}' AND hidden=0"
-#     rows = None
-#     if db_type == DataBaseType.MARIA:
-#         rows = db_request_maria(query)
-#     else:
-#         rows = db_request_postgres(query)
-#     response = templates.TemplateResponse("index.html",
-#                                           {"request": request, "news_rows": get_news(rows), "category": category})
-#     if not session:
-#         response.set_cookie("session", get_new_cookie())
-#     return response
+@app.get("/filter", response_class=HTMLResponse)
+async def use_filter(request: Request, filter: str, session: str = Cookie("")):
+    db = get_db()
+    words = crud.get_words_filter(db, 1, filter)
+    is_admin = check_cookie(db, session)
+    db.close()
+    response = templates.TemplateResponse("library.html", {"request": request, "data": words, "is_admin": is_admin})
+    return response
+
+
+@app.get("/remove/{word_id}", response_class=HTMLResponse)
+async def remove_form(request: Request, word_id: int, session: str = Cookie("")):
+    db = get_db()
+    word = crud.get_word(db, word_id)
+    is_admin = check_cookie(db, session)
+    db.close()
+    if is_admin:
+        if word:
+            response = templates.TemplateResponse("confirm.html",
+                                                  {"request": request, "word": word, "is_admin": is_admin})
+        else:
+            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                                 "message": "Слово не найдено"}, status_code=404)
+    else:
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                             "message": "У вас нет доступа"}, status_code=401)
+    return response
+
+
+@app.get("/remove_word/{word_id}", response_class=Response)
+async def remove_word(request: Request, word_id: int, session: str = Cookie("")):
+    db = get_db()
+    is_admin = check_cookie(db, session)
+    if is_admin:
+        word = crud.get_word(db, word_id)
+        remove_image(word.image_name)
+        if word:
+            crud.remove_word(db, word_id)
+        response = RedirectResponse(f'/', status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                             "message": "У вас нет доступа"}, status_code=401)
+    db.close()
+    return response
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -86,17 +130,19 @@ async def proposed_words(request: Request, session: str = Cookie("")):
 
 
 @app.post("/approve_word", response_class=Response)
-async def create_new_word(data: schemas.ApproveRequest, session: str = Cookie("")):
+async def approve_word(data: schemas.ApproveRequest, session: str = Cookie("")):
     db = get_db()
     is_admin = check_cookie(db, session)
     if not is_admin:
         db.close()
         return Response(status_code=401)
-
-    if data.approve == 0:
-        crud.update_word_status(db, data.word_id, -1)
-    elif data.approve == 1:
-        crud.update_word_status(db, data.word_id, 1)
+    if crud.get_word(db, data.word_id):
+        if data.approve == 0:
+            word = crud.get_word(db, data.word_id)
+            remove_image(word)
+            crud.remove_word(db, word.id)
+        elif data.approve == 1:
+            crud.update_word_status(db, data.word_id, 1)
     db.close()
     return Response(status_code=200)
 
@@ -108,8 +154,12 @@ async def edit_word(request: Request, item_id: int, session: str = Cookie("")):
     is_admin = check_cookie(db, session)
     db.close()
     if is_admin:
-        response = templates.TemplateResponse("edit_word.html", {"request": request, "word": word,
-                                                                 "is_admin": is_admin})
+        if word:
+            response = templates.TemplateResponse("edit_word.html", {"request": request, "word": word,
+                                                                     "is_admin": is_admin})
+        else:
+            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                                 "message": "Слово не найдено"}, status_code=404)
     else:
         response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
                                                              "message": "У вас нет доступа"}, status_code=401)
@@ -118,16 +168,16 @@ async def edit_word(request: Request, item_id: int, session: str = Cookie("")):
 
 @app.post("/update_word/{item_id}", response_class=RedirectResponse)
 async def update_word(request: Request, item_id: int, word: str = Form(), description: str = Form(),
-                          file: UploadFile = File(), session: str = Cookie("")):
+                      file: UploadFile = File(), session: str = Cookie("")):
     db = get_db()
     is_admin = check_cookie(db, session)
 
     if is_admin:
         if file and file.filename:
-            image_extension = file.filename.split(".")[-1]
-            with open(f"Images/{item_id}.{image_extension}", "wb") as f:
-                f.write(file.file.read())
-            crud.update_word(db, item_id, word, description, image_extension)
+            word_db = crud.get_word(db, item_id)
+            remove_image(word_db.image_name)
+            image_name = write_image(file)
+            crud.update_word(db, item_id, word, description, image_name)
         else:
             crud.update_word(db, item_id, word, description)
 
@@ -142,8 +192,12 @@ async def show_item(request: Request, item_id: int, session: str = Cookie("")):
     is_admin = check_cookie(db, session)
     word = crud.get_word(db, item_id)
     db.close()
-    response = templates.TemplateResponse("item.html", {"request": request, "word": word, "is_admin": is_admin,
-                                                        "is_propose": True if word.approve == 0 else False})
+    if word:
+        response = templates.TemplateResponse("item.html", {"request": request, "word": word, "is_admin": is_admin,
+                                                            "is_propose": word.approve == 0})
+    else:
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                             "message": "Слово не найдено"}, status_code=404)
     return response
 
 
@@ -163,11 +217,9 @@ async def create_new_word(request: Request, word: str = Form(), description: str
 
     db = get_db()
     is_admin = check_cookie(db, session)
-    word_id = crud.add_word(db, word, description, image_extension, 1 if is_admin else 0)
+    image_name = write_image(file)
+    crud.add_word(db, word, description, image_name, 1 if is_admin else 0)
     db.close()
-
-    with open(f"Images/{word_id}.{image_extension}", "wb") as f:
-        f.write(file.file.read())
 
     redirect_url = request.url_for('field_new_word')
     return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)

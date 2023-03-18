@@ -1,8 +1,8 @@
-{% extends "index.html" %}
+{% extends "index_without_back.html" %}
 
 {% block content %}
 
-<table class="table table-striped table-bordered" style="background: #FFFFFF;">
+<table class="table table-striped table-bordered" style="background: #FFFFFF; overflow: auto">
     <thead>
     <tr>
         <th scope="col" style="width: 5%">#</th>
@@ -13,16 +13,20 @@
     </tr>
     </thead>
     <tbody>
-    {% for item in data %}
-        <tr>
-            <th scope="row">{{ item.id }}</th>
-            <td>{{ item.word }}</td>
-            <td>{{ item.description }}</td>
-            <td>5</td>
-            <td>
-                <a href="/item/{{ item.id }}" class="btn btn-secondary" role="button">Перейти</a>
-            </td>
-        </tr>
+    {% for i in range(data|length) %}
+    <tr>
+        <th scope="row">{{ i + 1 }}</th>
+        <td>{{ data[i].word }}</td>
+        <td>
+<!--            <div class="text-truncate">-->
+                {{ data[i].description }}
+<!--            </div>-->
+        </td>
+        <td>5</td>
+        <td>
+            <a href="/item/{{ data[i].id }}" class="btn btn-secondary" role="button">Перейти</a>
+        </td>
+    </tr>
     {% endfor %}
     </tbody>
 </table>

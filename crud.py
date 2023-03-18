@@ -5,20 +5,20 @@ import models
 from datetime import datetime
 
 
-def add_word(db: Session, word: str, description: str, image_extension: str, approve: int) -> int:
-    db_word = models.Words(word=word, description=description, image_extension=image_extension, approve=approve)
+def add_word(db: Session, word: str, description: str, image_name: str, approve: int) -> int:
+    db_word = models.Words(word=word, description=description, image_name=image_name, approve=approve)
     db.add(db_word)
     db.commit()
     db.refresh(db_word)
     return db_word.id
 
 
-def update_word(db: Session, word_id: int, word: str, description: str, image_extension: str = None):
-    if image_extension is None:
+def update_word(db: Session, word_id: int, word: str, description: str, image_name: str = None):
+    if image_name is None:
         db.query(models.Words).filter(models.Words.id == word_id).update({"word": word, "description": description})
     else:
         db.query(models.Words).filter(models.Words.id == word_id).update({"word": word, "description": description,
-                                                                          "image_extension": image_extension})
+                                                                          "image_name": image_name})
     db.commit()
 
 
@@ -27,12 +27,22 @@ def update_word_status(db: Session, word_id: int, new_status: int):
     db.commit()
 
 
+def remove_word(db: Session, word_id: int):
+    db.query(models.Words).filter(models.Words.id == word_id).delete()
+    db.commit()
+
+
 def get_word(db: Session, id_item: int) -> models.Words:
     return db.query(models.Words).filter(models.Words.id == id_item).first()
 
 
 def get_words(db: Session, approve: int) -> [models.Words]:
-    return db.query(models.Words).filter(models.Words.approve == approve).all()
+    return db.query(models.Words).filter(models.Words.approve == approve).order_by(models.Words.word).all()
+
+
+def get_words_filter(db: Session, approve: int, filter: str) -> [models.Words]:
+    return db.query(models.Words).filter(models.Words.approve == approve).\
+        filter(models.Words.word.ilike(f"%{filter}%")).order_by(models.Words.word).all()
 
 
 def login(db: Session, username: str, password: str) -> bool:
