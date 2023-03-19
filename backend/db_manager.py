@@ -5,10 +5,10 @@ from sqlalchemy.ext.declarative import declarative_base
 
 # get data from environment
 # db_port = os.environ.get('POSTGRES_PORT') or 5432
-# db_host = os.environ.get('POSTGRES_HOST') or "127.0.0.1"
-# db_name = os.environ.get('POSTGRES_DB') or "Library"
-# db_user = os.environ.get('POSTGRES_USER') or "postgres"
-# db_pass = os.environ.get('POSTGRES_PASSWORD') or "postgres"
+# db_host = os.environ.get('POSTGRES_HOST')
+# db_name = os.environ.get('POSTGRES_DB')
+# db_user = os.environ.get('POSTGRES_USER')
+# db_pass = os.environ.get('POSTGRES_PASSWORD')
 db_port = 5432
 db_host = "127.0.0.1"
 db_name = "Library"

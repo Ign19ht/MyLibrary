@@ -1,6 +1,7 @@
 import datetime
 import os
 import random
+from typing import List
 
 import uvicorn
 from fastapi import FastAPI, Request, Form, Cookie, status, File, UploadFile
@@ -28,6 +29,8 @@ def write_image(file: UploadFile) -> str:
     data = file.file.read()
     hash = get_hash(data)
     image_name = f"{hash}.{image_extension}"
+    if not os.path.exists("Images"):
+        os.makedirs("Images")
     with open(f"Images/{image_name}", "wb") as f:
         f.write(data)
     return image_name
@@ -51,6 +54,14 @@ def check_cookie(db: Session, session_cookie: str) -> bool:
     return True
 
 
+def get_words_data(words: List[models.Words]):
+    data = []
+    for word in words:
+        des = word.description.split(".")[0]
+        data.append([word.word, des, word.id])
+    return data
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/item/static", StaticFiles(directory="static"), name="static")
@@ -59,13 +70,37 @@ app.mount("/remove/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates/library")
 
 
+@app.get("/", response_class=HTMLResponse)
+async def library(request: Request, session: str = Cookie("")):
+    db = get_db()
+    words = crud.get_words(db, 1)
+    is_admin = check_cookie(db, session)
+    db.close()
+    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
+    return response
+
+
+@app.get("/proposed_words", response_class=HTMLResponse)
+async def proposed_words(request: Request, session: str = Cookie("")):
+    db = get_db()
+    words = crud.get_words(db, 0)
+    is_admin = check_cookie(db, session)
+    db.close()
+    if is_admin:
+        response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
+    else:
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+                                                             "message": "У вас нет доступа"}, status_code=401)
+    return response
+
+
 @app.get("/filter", response_class=HTMLResponse)
 async def use_filter(request: Request, filter: str, session: str = Cookie("")):
     db = get_db()
     words = crud.get_words_filter(db, 1, filter)
     is_admin = check_cookie(db, session)
     db.close()
-    response = templates.TemplateResponse("library.html", {"request": request, "data": words, "is_admin": is_admin})
+    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
     return response
 
 
@@ -102,30 +137,6 @@ async def remove_word(request: Request, word_id: int, session: str = Cookie(""))
         response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
                                                              "message": "У вас нет доступа"}, status_code=401)
     db.close()
-    return response
-
-
-@app.get("/", response_class=HTMLResponse)
-async def library(request: Request, session: str = Cookie("")):
-    db = get_db()
-    words = crud.get_words(db, 1)
-    is_admin = check_cookie(db, session)
-    db.close()
-    response = templates.TemplateResponse("library.html", {"request": request, "data": words, "is_admin": is_admin})
-    return response
-
-
-@app.get("/proposed_words", response_class=HTMLResponse)
-async def proposed_words(request: Request, session: str = Cookie("")):
-    db = get_db()
-    words = crud.get_words(db, 0)
-    is_admin = check_cookie(db, session)
-    db.close()
-    if is_admin:
-        response = templates.TemplateResponse("library.html", {"request": request, "data": words, "is_admin": is_admin})
-    else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
-                                                             "message": "У вас нет доступа"}, status_code=401)
     return response
 
 
@@ -213,7 +224,6 @@ async def field_new_word(request: Request, session: str = Cookie("")):
 @app.post("/new_word", response_class=RedirectResponse)
 async def create_new_word(request: Request, word: str = Form(), description: str = Form(),
                           file: UploadFile = File(...), session: str = Cookie("")):
-    image_extension = file.filename.split(".")[-1]
 
     db = get_db()
     is_admin = check_cookie(db, session)

@@ -2,12 +2,16 @@
 
 {% block content %}
 
-<div class="text-center">
-    <img src="/image/{{ word.image_name }}" class="rounded" width="30%" height="40%">
-</div>
+<!--<div class="text-center">-->
+<!--    <img src="/image/{{ word.image_name }}" class="rounded" width="30%" height="40%">-->
+<!--</div>-->
 
 <h1 class="text-center">{{ word.word }}</h1>
-<p class="text" style="word">{{ word.description }}</p>
+<!--<p class="text" style="word">{{ word.description }}</p>-->
+<p class="text" style="white-space: pre-wrap">
+    <img src="/image/{{ word.image_name }}" class="rounded float-start mx-3" width="20%">
+    {{ word.description }}
+</p>
 
 <div class="d-flex flex-row-reverse">
     {% if is_admin and is_propose %}

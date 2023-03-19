@@ -8,7 +8,6 @@
         <th scope="col" style="width: 5%">#</th>
         <th scope="col">Слово</th>
         <th scope="col">Описание</th>
-        <th scope="col">Категория</th>
         <th scope="col" style="width: 10%"></th>
     </tr>
     </thead>
@@ -16,15 +15,12 @@
     {% for i in range(data|length) %}
     <tr>
         <th scope="row">{{ i + 1 }}</th>
-        <td>{{ data[i].word }}</td>
+        <td>{{ data[i][0] }}</td>
         <td>
-<!--            <div class="text-truncate">-->
-                {{ data[i].description }}
-<!--            </div>-->
+                {{ data[i][1] }}
         </td>
-        <td>5</td>
         <td>
-            <a href="/item/{{ data[i].id }}" class="btn btn-secondary" role="button">Перейти</a>
+            <a href="/item/{{ data[i][2] }}" class="btn btn-secondary" role="button">Перейти</a>
         </td>
     </tr>
     {% endfor %}
