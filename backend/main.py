@@ -18,6 +18,7 @@ import string
 import hashlib
 
 create_db()
+PAGE_SIZE = 5
 
 
 def get_hash(data) -> str:
@@ -71,23 +72,37 @@ templates = Jinja2Templates(directory="templates/library")
 
 
 @app.get("/", response_class=HTMLResponse)
-async def library(request: Request, session: str = Cookie("")):
+async def library(request: Request, page: int = 0, session: str = Cookie("")):
     db = get_db()
-    words = crud.get_words(db, 1)
+    words, total_size = crud.get_words(db, 1, page, PAGE_SIZE)
     is_admin = check_cookie(db, session)
     db.close()
-    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
+
+    pages = total_size // PAGE_SIZE
+    if total_size % PAGE_SIZE != 0:
+        pages += 1
+
+    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
+                                                           "is_admin": is_admin, "link": "?page=",
+                                                           "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
     return response
 
 
 @app.get("/proposed_words", response_class=HTMLResponse)
-async def proposed_words(request: Request, session: str = Cookie("")):
+async def proposed_words(request: Request, page: int = 0, session: str = Cookie("")):
     db = get_db()
-    words = crud.get_words(db, 0)
+    words, total_size = crud.get_words(db, 0, page, PAGE_SIZE)
     is_admin = check_cookie(db, session)
     db.close()
+
+    pages = total_size // PAGE_SIZE
+    if total_size % PAGE_SIZE != 0:
+        pages += 1
+
     if is_admin:
-        response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
+        response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
+                                                               "is_admin": is_admin, "link": "proposed_words?page=",
+                                                               "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
     else:
         response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
                                                              "message": "У вас нет доступа"}, status_code=401)
@@ -95,12 +110,19 @@ async def proposed_words(request: Request, session: str = Cookie("")):
 
 
 @app.get("/filter", response_class=HTMLResponse)
-async def use_filter(request: Request, filter: str, session: str = Cookie("")):
+async def use_filter(request: Request, filter: str, page: int = 0, session: str = Cookie("")):
     db = get_db()
-    words = crud.get_words_filter(db, 1, filter)
+    words, total_size = crud.get_words(db, 1, page, PAGE_SIZE, filter)
     is_admin = check_cookie(db, session)
     db.close()
-    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words), "is_admin": is_admin})
+
+    pages = total_size // PAGE_SIZE
+    if total_size % PAGE_SIZE != 0:
+        pages += 1
+
+    response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
+                                                           "is_admin": is_admin, "link": f"filter?filter={filter}&page=",
+                                                           "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
     return response
 
 

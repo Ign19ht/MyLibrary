@@ -34,13 +34,12 @@ def get_word(db: Session, id_item: int) -> models.Words:
     return db.query(models.Words).filter(models.Words.id == id_item).first()
 
 
-def get_words(db: Session, approve: int) -> [models.Words]:
-    return db.query(models.Words).filter(models.Words.approve == approve).order_by(models.Words.word).all()
-
-
-def get_words_filter(db: Session, approve: int, filter: str) -> [models.Words]:
-    return db.query(models.Words).filter(models.Words.approve == approve).\
-        filter(models.Words.word.ilike(f"%{filter}%")).order_by(models.Words.word).all()
+def get_words(db: Session, approve: int, offset: int, page_size: int, filter: str = None) -> ([models.Words], int):
+    query = db.query(models.Words).filter(models.Words.approve == approve)
+    if filter:
+        query = query.filter(models.Words.word.ilike(f"%{filter}%"))
+    total_size = len(query.all())
+    return query.order_by(models.Words.word).limit(page_size).offset(offset * page_size).all(), total_size
 
 
 def login(db: Session, username: str, password: str) -> bool:

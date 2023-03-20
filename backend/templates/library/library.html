@@ -14,10 +14,10 @@
     <tbody>
     {% for i in range(data|length) %}
     <tr>
-        <th scope="row">{{ i + 1 }}</th>
+        <th scope="row">{{ current_page * page_size + i + 1 }}</th>
         <td>{{ data[i][0] }}</td>
         <td>
-                {{ data[i][1] }}
+            {{ data[i][1] }}
         </td>
         <td>
             <a href="/item/{{ data[i][2] }}" class="btn btn-secondary" role="button">Перейти</a>
@@ -26,5 +26,14 @@
     {% endfor %}
     </tbody>
 </table>
+{% if pages != 1 %}
+<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+    <div class="btn-group mr-2" role="group" aria-label="First group">
+        {% for i in range(pages) %}
+        <a href="/{{ link }}{{ i }}" class="btn btn-secondary {% if i == current_page %} disabled {% endif %}" role="button">{{ i + 1 }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}
