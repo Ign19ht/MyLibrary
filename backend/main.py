@@ -281,6 +281,7 @@ async def logout(request: Request, session: str = Cookie("")):
     is_admin = check_cookie(db, session)
     if is_admin:
         crud.remove_cookie(db, session)
+    db.close()
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
