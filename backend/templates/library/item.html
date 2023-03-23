@@ -2,13 +2,9 @@
 
 {% block content %}
 
-<!--<div class="text-center">-->
-<!--    <img src="/image/{{ word.image_name }}" class="rounded" width="30%" height="40%">-->
-<!--</div>-->
-
 <h1 class="text-center">{{ word.word }}</h1>
-<!--<p class="text" style="word">{{ word.description }}</p>-->
-<p class="text" style="white-space: pre-wrap">
+
+<p class="text overflow-auto" style="white-space: pre-wrap; max-height: 85%">
     <img src="/image/{{ word.image_name }}" class="rounded float-start mx-3" width="20%">
     {{ word.description }}
 </p>
@@ -24,6 +20,7 @@
     {% endif %}
 </div>
 
+{% if is_admin and is_propose %}
 <script>
     function approve() {
         fetch('/approve_word', {
@@ -55,5 +52,6 @@
         window.location.reload();
     }
 </script>
+{% endif %}
 
 {% endblock %}
