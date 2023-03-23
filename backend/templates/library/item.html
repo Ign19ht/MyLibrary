@@ -4,23 +4,23 @@
 
 <h1 class="text-center">{{ word.word }}</h1>
 
-<p class="text overflow-auto" style="white-space: pre-wrap; max-height: 85%">
+<p class="text overflow-auto" style="white-space: pre-wrap; max-height: {% if is_admin %}85{% else %}100{% endif %}%">
     <img src="/image/{{ word.image_name }}" class="rounded float-start mx-3" width="20%">
     {{ word.description }}
 </p>
 
+{% if is_admin %}
 <div class="d-flex flex-row-reverse">
-    {% if is_admin and is_propose %}
+    {% if is_propose %}
     <button type="button" class="btn btn-success mx-1" onclick="approve()">Одобрить</button>
     <button type="button" class="btn btn-danger mx-1" onclick="decline()">Отказать</button>
-    {% endif %}
-    {% if is_admin and not is_propose %}
+    {% else %}
     <a href="/remove/{{ word.id }}" class="btn btn-danger mx-1" role="button">Удалить</a>
     <a href="/edit_item/{{ word.id }}" class="btn btn-warning mx-1" role="button">Редактировать</a>
     {% endif %}
 </div>
 
-{% if is_admin and is_propose %}
+{% if is_propose %}
 <script>
     function approve() {
         fetch('/approve_word', {
@@ -52,6 +52,7 @@
         window.location.reload();
     }
 </script>
+{% endif %}
 {% endif %}
 
 {% endblock %}
