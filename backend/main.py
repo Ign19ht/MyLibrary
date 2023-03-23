@@ -22,7 +22,8 @@ PAGE_SIZE = 5
 
 
 def get_hash(data) -> str:
-    return hashlib.sha256(data).hexdigest()
+    salt = os.urandom(32)
+    return hashlib.sha256(salt + data).hexdigest()
 
 
 def write_image(file: UploadFile) -> str:
