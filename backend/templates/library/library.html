@@ -26,11 +26,11 @@
     {% endfor %}
     </tbody>
 </table>
-{% if pages != 1 %}
+{% if links|length > 1 %}
 <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
     <div class="btn-group mr-2" role="group" aria-label="First group">
-        {% for i in range(pages) %}
-        <a href="/{{ link }}{{ i }}" class="btn btn-secondary {% if i == current_page %} disabled {% endif %}" role="button">{{ i + 1 }}</a>
+        {% for i in range(links|length) %}
+        <a href="{{ links[i] }}" class="btn btn-secondary {% if i == current_page %} disabled {% endif %}" role="button">{{ i + 1 }}</a>
         {% endfor %}
     </div>
 </div>

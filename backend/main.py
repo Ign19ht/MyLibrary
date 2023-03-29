@@ -73,6 +73,12 @@ templates = Jinja2Templates(directory="templates/library")
 
 
 @app.get("/", response_class=HTMLResponse)
+async def intro(request: Request):
+    response = templates.TemplateResponse("intro.html", {"request": request})
+    return response
+
+
+@app.get("/library", response_class=HTMLResponse)
 async def library(request: Request, page: int = 0, session: str = Cookie("")):
     db = get_db()
     words, total_size = crud.get_words(db, 1, page, PAGE_SIZE)
@@ -84,8 +90,9 @@ async def library(request: Request, page: int = 0, session: str = Cookie("")):
         pages += 1
 
     response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
-                                                           "is_admin": is_admin, "link": "?page=",
-                                                           "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
+                                                           "is_admin": is_admin,
+                                                           "links": [f'/library?page={i}' for i in range(pages)],
+                                                           "current_page": page, "page_size": PAGE_SIZE})
     return response
 
 
@@ -102,10 +109,11 @@ async def proposed_words(request: Request, page: int = 0, session: str = Cookie(
 
     if is_admin:
         response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
-                                                               "is_admin": is_admin, "link": "proposed_words?page=",
-                                                               "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
+                                                               "is_admin": is_admin,
+                                                               "links": [f'/proposed_words?page={i}' for i in range(pages)],
+                                                               "current_page": page, "page_size": PAGE_SIZE})
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
                                                              "message": "У вас нет доступа"}, status_code=401)
     return response
 
@@ -122,8 +130,9 @@ async def use_filter(request: Request, filter: str, page: int = 0, session: str 
         pages += 1
 
     response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
-                                                           "is_admin": is_admin, "link": f"filter?filter={filter}&page=",
-                                                           "pages": pages, "current_page": page, "page_size": PAGE_SIZE})
+                                                           "is_admin": is_admin,
+                                                           "links": [f'/filter?filter={filter}&page={i}' for i in range(pages)],
+                                                           "current_page": page, "page_size": PAGE_SIZE})
     return response
 
 
@@ -138,10 +147,10 @@ async def remove_form(request: Request, word_id: int, session: str = Cookie(""))
             response = templates.TemplateResponse("confirm.html",
                                                   {"request": request, "word": word, "is_admin": is_admin})
         else:
-            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
                                                                  "message": "Слово не найдено"}, status_code=404)
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
                                                              "message": "У вас нет доступа"}, status_code=401)
     return response
 
@@ -155,9 +164,9 @@ async def remove_word(request: Request, word_id: int, session: str = Cookie(""))
         remove_image(word.image_name)
         if word:
             crud.remove_word(db, word_id)
-        response = RedirectResponse(f'/', status_code=status.HTTP_303_SEE_OTHER)
+        response = RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
                                                              "message": "У вас нет доступа"}, status_code=401)
     db.close()
     return response
@@ -192,10 +201,10 @@ async def edit_word(request: Request, item_id: int, session: str = Cookie("")):
             response = templates.TemplateResponse("edit_word.html", {"request": request, "word": word,
                                                                      "is_admin": is_admin})
         else:
-            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
                                                                  "message": "Слово не найдено"}, status_code=404)
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
                                                              "message": "У вас нет доступа"}, status_code=401)
     return response
 
@@ -217,7 +226,7 @@ async def update_word(request: Request, item_id: int, word: str = Form(), descri
 
     db.close()
 
-    return RedirectResponse(f'/item/{item_id}', status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(request.url_for("show_item", item_id=item_id), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.get("/item/{item_id}", response_class=HTMLResponse)
@@ -230,7 +239,7 @@ async def show_item(request: Request, item_id: int, session: str = Cookie("")):
         response = templates.TemplateResponse("item.html", {"request": request, "word": word, "is_admin": is_admin,
                                                             "is_propose": word.approve == 0})
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
                                                              "message": "Слово не найдено"}, status_code=404)
     return response
 
@@ -269,7 +278,7 @@ async def login(request: Request, session: str = Cookie("")):
     is_admin = check_cookie(db, session)
     db.close()
     if is_admin:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin,
+        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 403,
                                                              "message": "Вы уже авторизованы"})
     else:
         response = templates.TemplateResponse("auth.html", {"request": request, "is_admin": is_admin})
@@ -277,22 +286,22 @@ async def login(request: Request, session: str = Cookie("")):
 
 
 @app.post("/login")
-async def login(request: Request, username: str = Form(), password: str = Form(), session: str = Cookie("")):
+async def login_post(request: Request, username: str = Form(), password: str = Form(), session: str = Cookie("")):
     db = get_db()
     is_admin = check_cookie(db, session)
 
     if is_admin:
-        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+        response = RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
     else:
         is_auth = crud.login(db, username, password)
         if is_auth:
-            response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+            response = RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
             session_cookie = cookie_gen()
             date = datetime.datetime.now()
             crud.add_cookie(db, session_cookie, date)
             response.set_cookie(key="session", value=session_cookie)
         else:
-            response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+            response = RedirectResponse(request.url_for('login'), status_code=status.HTTP_303_SEE_OTHER)
 
     db.close()
     return response
@@ -305,7 +314,7 @@ async def logout(request: Request, session: str = Cookie("")):
     if is_admin:
         crud.remove_cookie(db, session)
     db.close()
-    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
 
 
 if __name__ == "__main__":
