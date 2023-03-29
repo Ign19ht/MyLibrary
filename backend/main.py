@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, Form, Cookie, status, File, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import StarletteHTTPException, HTTPException, RequestValidationError
 from sqlalchemy.orm import Session
 
 import models
@@ -113,8 +114,7 @@ async def proposed_words(request: Request, page: int = 0, session: str = Cookie(
                                                                "links": [f'/proposed_words?page={i}' for i in range(pages)],
                                                                "current_page": page, "page_size": PAGE_SIZE})
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
-                                                             "message": "У вас нет доступа"}, status_code=401)
+        raise HTTPException(status_code=401, detail="У вас нет доступа")
     return response
 
 
@@ -130,7 +130,7 @@ async def use_filter(request: Request, filter: str, page: int = 0, session: str 
         pages += 1
 
     response = templates.TemplateResponse("library.html", {"request": request, "data": get_words_data(words),
-                                                           "is_admin": is_admin,
+                                                           "is_admin": is_admin, "search_value": filter,
                                                            "links": [f'/filter?filter={filter}&page={i}' for i in range(pages)],
                                                            "current_page": page, "page_size": PAGE_SIZE})
     return response
@@ -147,11 +147,9 @@ async def remove_form(request: Request, word_id: int, session: str = Cookie(""))
             response = templates.TemplateResponse("confirm.html",
                                                   {"request": request, "word": word, "is_admin": is_admin})
         else:
-            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
-                                                                 "message": "Слово не найдено"}, status_code=404)
+            raise HTTPException(status_code=404, detail="Слово не найдено")
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
-                                                             "message": "У вас нет доступа"}, status_code=401)
+        raise HTTPException(status_code=401, detail="У вас нет доступа")
     return response
 
 
@@ -166,8 +164,7 @@ async def remove_word(request: Request, word_id: int, session: str = Cookie(""))
             crud.remove_word(db, word_id)
         response = RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
-                                                             "message": "У вас нет доступа"}, status_code=401)
+        raise HTTPException(status_code=401, detail="У вас нет доступа")
     db.close()
     return response
 
@@ -201,11 +198,9 @@ async def edit_word(request: Request, item_id: int, session: str = Cookie("")):
             response = templates.TemplateResponse("edit_word.html", {"request": request, "word": word,
                                                                      "is_admin": is_admin})
         else:
-            response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
-                                                                 "message": "Слово не найдено"}, status_code=404)
+            raise HTTPException(status_code=404, detail="Слово не найдено")
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 401,
-                                                             "message": "У вас нет доступа"}, status_code=401)
+        raise HTTPException(status_code=401, detail="У вас нет доступа")
     return response
 
 
@@ -239,8 +234,7 @@ async def show_item(request: Request, item_id: int, session: str = Cookie("")):
         response = templates.TemplateResponse("item.html", {"request": request, "word": word, "is_admin": is_admin,
                                                             "is_propose": word.approve == 0})
     else:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 404,
-                                                             "message": "Слово не найдено"}, status_code=404)
+        raise HTTPException(status_code=404, detail="Слово не найдено")
     return response
 
 
@@ -278,8 +272,7 @@ async def login(request: Request, session: str = Cookie("")):
     is_admin = check_cookie(db, session)
     db.close()
     if is_admin:
-        response = templates.TemplateResponse("error.html", {"request": request, "is_admin": is_admin, "error_code": 403,
-                                                             "message": "Вы уже авторизованы"})
+        raise HTTPException(status_code=403, detail="Вы уже авторизованы")
     else:
         response = templates.TemplateResponse("auth.html", {"request": request, "is_admin": is_admin})
     return response
@@ -315,6 +308,18 @@ async def logout(request: Request, session: str = Cookie("")):
         crud.remove_cookie(db, session)
     db.close()
     return RedirectResponse(request.url_for('library'), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return templates.TemplateResponse("error.html", {"request": request, "is_admin": False, "error_code": exc.status_code,
+                                                             "message": exc.detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def http_exception_handler(request, exc):
+    return templates.TemplateResponse("error.html", {"request": request, "is_admin": False, "error_code": 400,
+                                                             "message": "Ошибка валидации"})
 
 
 if __name__ == "__main__":

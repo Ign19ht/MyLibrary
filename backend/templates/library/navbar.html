@@ -3,10 +3,11 @@
         <img src="static/images/mini_logo.png" width="50" height="50" alt="">
         Энциклопедия цифрового мира</a>
 
+    {% if error_code is not defined %}
     <ul class="navbar-nav ml-auto mx-2">
         <form class="form-inline" action="/filter">
             <div class="input-group">
-                <input class="form-control" type="search" placeholder="Поиск" aria-label="Search" name="filter">
+                <input class="form-control" type="search" placeholder="Поиск" aria-label="Search" name="filter" value="{{ search_value }}">
                 <button class="btn btn-outline-success" type="submit">Поиск</button>
             </div>
         </form>
@@ -20,4 +21,5 @@
         {% endif %}
 
     </ul>
+    {% endif %}
 </nav>
