@@ -65,6 +65,17 @@ def get_words_data(words: List[models.Words]):
     return data
 
 
+def validate_image_name(image_name: str) -> bool:
+    if '.' not in image_name:
+        return False
+    name, extension = image_name.split(".", 1)
+    if any(not c.isalnum() for c in name + extension):
+        return False
+    if '..' in name:
+        return False
+    return True
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/item/static", StaticFiles(directory="static"), name="static")
@@ -263,7 +274,8 @@ async def create_new_word(request: Request, word: str = Form(), description: str
 
 @app.get("/image/{image_name}")
 async def get_image(image_name: str):
-    return FileResponse(f'Images/{image_name}')
+    if validate_image_name(image_name):
+        return FileResponse(f'Images/{image_name}')
 
 
 @app.get("/login", response_class=HTMLResponse)
